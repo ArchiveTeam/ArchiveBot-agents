@@ -1,0 +1,20 @@
+#!/usr/bin/env ruby
+
+require 'octokit'
+require 'uri'
+
+extractor = File.expand_path('../extract-externals', __FILE__)
+
+externals = IO.popen([ENV, extractor, ARGV[0]], 'r').read.chomp
+slug = URI(ARGV[0]).path.sub(%r{^/wiki/}, '') + '-external_links'
+
+octokit = Octokit::Client.new
+
+files = {}
+files[slug] = { content: externals }
+
+result = octokit.create_gist(files: files)
+
+if result
+  puts result.files[slug].raw_url
+end

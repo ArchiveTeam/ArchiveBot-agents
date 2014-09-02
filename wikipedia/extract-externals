@@ -1,0 +1,24 @@
+#!/usr/bin/env ruby
+
+require 'nokogiri'
+require 'net/http'
+require 'uri'
+
+wikipage_uri = URI(ARGV[0])
+doc = Nokogiri.HTML(Net::HTTP.get(wikipage_uri))
+
+externals = (doc/'a.external').map { |e| e.attributes['href'].to_s }.sort.uniq.map { |e| URI(e) }
+
+# Some "externals" are really links back to wikipedia.org; ignore them
+externals.reject! { |uri| uri.host =~ /wikipedia\.org/ }
+
+# Links without schemes should use the scheme of the URI we received
+modified = externals.map do |uri|
+  if !uri.scheme
+    uri.scheme = wikipage_uri.scheme
+  end
+
+  uri.to_s
+end
+    
+puts modified
