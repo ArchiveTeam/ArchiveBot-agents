@@ -6,7 +6,9 @@ require 'uri'
 extractor = File.expand_path('../extract-externals', __FILE__)
 
 externals = IO.popen([ENV, extractor, ARGV[0]], 'r').read.chomp
-slug = URI(ARGV[0]).path.sub(%r{^/wiki/}, '') + '-external_links'
+uri = URI(ARGV[0])
+
+slug = uri.host + '-' + uri.path.sub(%r{^/wiki/}, '') + '-external_links'
 
 octokit = Octokit::Client.new
 
