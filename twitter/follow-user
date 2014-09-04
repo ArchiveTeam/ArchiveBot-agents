@@ -1,0 +1,48 @@
+#!/usr/bin/env ruby
+
+require 'tweetstream'
+require 'twitter'
+require 'trollop'
+require 'json'
+
+opts = Trollop.options do
+  opt :twitter_config, 'Filename containing Twitter key config', type: String, default: ENV['TWITTER_CONFIG']
+  opt :backlog_length, 'Number of backlog tweets to fetch', type: Integer, default: 50
+end
+
+config_file = opts[:twitter_config] or abort 'Twitter config file required'
+username = ARGV.last or abort 'Username required'
+
+twitter_config = JSON.parse(File.read(config_file))
+
+TweetStream.configure do |config|
+  config.consumer_key = twitter_config['consumer_key']
+  config.consumer_secret = twitter_config['consumer_secret']
+  config.oauth_token = twitter_config['access_token']
+  config.oauth_token_secret = twitter_config['access_token_secret']
+  config.auth_method = :oauth
+end
+
+twc = Twitter::REST::Client.new do |config|
+  config.consumer_key = twitter_config['consumer_key']
+  config.consumer_secret = twitter_config['consumer_secret']
+  config.access_token = twitter_config['access_token']
+  config.access_token_secret = twitter_config['access_token_secret']
+end
+
+# TweetStream::Client#follow can't handle usernames, so we do our own mapping
+user = twc.user(username)
+
+abort "Unable to fetch ID for @#{username}" if !user
+
+# Fetch the last backlog_length tweets to get us started.  The newest tweet is
+# returned first, so we reverse the order to make it jive with the streamer.
+tweets = twc.user_timeline(user.id, count: opts[:backlog_length])
+
+$stdout.puts tweets.map(&:full_text).reverse
+$stdout.flush
+
+TweetStream::Client.new.follow([user.id]) do |status|
+  $stdout.puts status.full_text
+  $stdout.flush
+end
