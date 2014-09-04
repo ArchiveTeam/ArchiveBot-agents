@@ -3,4 +3,4 @@
 MYDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PROG="${MYDIR}/follow-user"
 
-$PROG $* | grep -Po 'https?://[^ ]+'
+$PROG $* | stdbuf -oL grep -Po 'https?://[^ ]+'
