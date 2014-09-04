@@ -1,0 +1,7 @@
+#!/usr/bin/env ruby
+
+$stdin.each_line do |url|
+  res = `curl -si '#{url}' | grep -i location | cut -d' ' -f2`.chomp
+  $stdout.puts res
+  $stdout.flush
+end
